@@ -77,7 +77,9 @@ class JvmBigDecimalNarrowingTest {
 
     @Test
     fun floatValueTest() {
-        var f = BigDecimal.fromFloat(Float.MAX_VALUE)
+        var f = BigDecimal.fromFloat(someFloatValue)
+        assertEquals(someFloatValue, f.floatValue(true))
+        f = BigDecimal.fromFloat(Float.MAX_VALUE)
         assertEquals(Float.MAX_VALUE, f.floatValue(true))
         f = BigDecimal.fromFloat(-Float.MAX_VALUE)
         assertEquals(-Float.MAX_VALUE, f.floatValue(true))

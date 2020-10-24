@@ -523,12 +523,7 @@ class BigDecimal private constructor(
          * @return BigDecimal representing input
          */
         fun fromFloat(float: Float, decimalMode: DecimalMode? = null): BigDecimal {
-            val floatString = float.toString()
-            return if (floatString.contains('.')) {
-                parseStringWithMode(floatString.dropLastWhile { it == '0' }, decimalMode)
-            } else {
-                parseStringWithMode(floatString, decimalMode)
-            }
+            return parseStringWithMode(float.toString(), decimalMode)
         }
 
         /**
@@ -540,12 +535,7 @@ class BigDecimal private constructor(
          * @return BigDecimal representing input
          */
         fun fromDouble(double: Double, decimalMode: DecimalMode? = null): BigDecimal {
-            val doubleString = double.toString()
-            return if (doubleString.contains('.') && !doubleString.contains('E', true)) {
-                parseStringWithMode(doubleString.dropLastWhile { it == '0' }, decimalMode)
-            } else {
-                parseStringWithMode(doubleString, decimalMode)
-            }
+            return parseStringWithMode(double.toString(), decimalMode)
         }
 
         /**
@@ -771,7 +761,12 @@ class BigDecimal private constructor(
                         }
                         val left = split[0].substring(startIndex = leftStart)
                         val rightSplit = split[1].split('E', 'e')
-                        val right = rightSplit[0]
+                        // trim meaningless trailing zeroes on string to the right of decimal
+                        val right = if (rightSplit[0].trimEnd('0').isEmpty())
+                            "0"
+                        else
+                            rightSplit[0].trimEnd('0')
+
                         val exponentSplit = rightSplit[1]
                         val exponentSignPresent = (exponentSplit[0] == '-' || exponentSplit[0] == '+')
                         val exponentSign = if (exponentSplit[0] == '-') {
@@ -1491,14 +1486,12 @@ class BigDecimal private constructor(
                     this.precision > 8))
             throw ArithmeticException("Value cannot be narrowed to float")
 
-        return if (exponent < 0 && exponent.absoluteValue < float10pow.size)
-            toBigInteger().longValue() * float10pow[exponent.absoluteValue.toInt()]
-        else {
-            if (exponent >= 0 && exponent < float10pow.size) {
-                this.significand.longValue(true).toFloat() / float10pow[exponent.toInt()]
-            } else
-                this.toString().toFloat()
-        }
+        val l = this.significand.longValue(exactRequired)
+        val divExponent = this.significand.numberOfDecimalDigits().toInt() - 1 - exponent.toInt()
+        return if (l.toFloat().toLong() == l && divExponent >= 0 && divExponent < float10pow.size) {
+            l.toFloat() / float10pow[divExponent]
+        } else
+            this.toString().toFloat()
     }
 
     /**
